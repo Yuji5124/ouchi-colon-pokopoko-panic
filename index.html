@@ -31,6 +31,35 @@ body {
 #start-screen {
   background: linear-gradient(180deg, #87ceeb 0%, #c8e6c9 100%);
 }
+
+/* 画像レイヤー */
+.sl { position: absolute; display: block; pointer-events: none; }
+#sl-bg      { left: 0;    top: 0;    width: 390px; height: 844px; z-index: 1; }
+#sl-title   { left: 25px; top: 35px; width: 340px; height: 190px; z-index: 2; }
+#sl-chars   { left: 18px; top: 235px; width: 354px; height: 300px; z-index: 2; }
+#sl-message { left: 40px; top: 610px; width: 310px; height: 80px;  z-index: 2; }
+#sl-button  { left: 55px; top: 720px; width: 280px; height: 90px;  z-index: 2; }
+
+/* ボタンタップ領域（画像有無に関わらず常に有効） */
+.start-btn-area {
+  position: absolute;
+  left: 55px; top: 720px; width: 280px; height: 90px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+/* フォールバックコンテンツ */
+#start-fallback {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+#start-fallback.hidden { display: none !important; }
 .title-main {
   font-size: 28px;
   font-weight: bold;
@@ -211,10 +240,21 @@ body {
 
 <!-- スタート画面 -->
 <div id="start-screen" class="screen">
-  <div class="title-main">おうちコロン</div>
-  <div class="title-sub">ぽこぽこパニック</div>
-  <div class="chara-preview">🟡</div>
-  <button class="btn btn-start" onclick="startGame()">START</button>
+  <!-- 画像レイヤー（素材があれば表示、なければ非表示） -->
+  <img class="sl" id="sl-bg"      src="assets/start/start_bg.png"      onload="hideFallback()" onerror="this.style.display='none'">
+  <img class="sl" id="sl-title"   src="assets/start/start_title.png"   onerror="this.style.display='none'">
+  <img class="sl" id="sl-chars"   src="assets/start/start_chars.png"   onerror="this.style.display='none'">
+  <img class="sl" id="sl-message" src="assets/start/start_message.png" onerror="this.style.display='none'">
+  <img class="sl" id="sl-button"  src="assets/start/start_button.png"  onerror="this.style.display='none'">
+  <!-- ボタン領域（常にタップ有効） -->
+  <div class="start-btn-area" onclick="startGame()"></div>
+  <!-- フォールバック（画像がない場合に表示） -->
+  <div id="start-fallback">
+    <div class="title-main">おうちコロン</div>
+    <div class="title-sub">ぽこぽこパニック</div>
+    <div class="chara-preview">🟡</div>
+    <button class="btn btn-start" onclick="startGame()">START</button>
+  </div>
 </div>
 
 <!-- ゲーム画面 -->
@@ -270,6 +310,10 @@ function getParams() {
 
 function getFeverParams() {
   return { delay: 320, stay: 550, count: 3 };
+}
+
+function hideFallback() {
+  document.getElementById('start-fallback').classList.add('hidden');
 }
 
 function show(id) {
