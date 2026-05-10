@@ -241,11 +241,11 @@ body {
 <!-- スタート画面 -->
 <div id="start-screen" class="screen">
   <!-- 画像レイヤー（素材があれば表示、なければ非表示） -->
-  <img class="sl" id="sl-bg"      src="assets/start/start_bg.png"      onload="hideFallback()" onerror="this.style.display='none'">
-  <img class="sl" id="sl-title"   src="assets/start/start_title.png"   onerror="this.style.display='none'">
-  <img class="sl" id="sl-chars"   src="assets/start/start_chars.png"   onerror="this.style.display='none'">
-  <img class="sl" id="sl-message" src="assets/start/start_message.png" onerror="this.style.display='none'">
-  <img class="sl" id="sl-button"  src="assets/start/start_button.png"  onerror="this.style.display='none'">
+  <img class="sl" id="sl-bg"      src="assets/start/start_bg.png"      onerror="this.style.display='none'">
+  <img class="sl" id="sl-title"   src="assets/start/start_title.png"   onload="onAssetLoad()" onerror="onAssetError(this)">
+  <img class="sl" id="sl-chars"   src="assets/start/start_chars.png"   onload="onAssetLoad()" onerror="onAssetError(this)">
+  <img class="sl" id="sl-message" src="assets/start/start_message.png" onload="onAssetLoad()" onerror="onAssetError(this)">
+  <img class="sl" id="sl-button"  src="assets/start/start_button.png"  onload="onAssetLoad()" onerror="onAssetError(this)">
   <!-- ボタン領域（常にタップ有効） -->
   <div class="start-btn-area" onclick="startGame()"></div>
   <!-- フォールバック（画像がない場合に表示） -->
@@ -312,6 +312,18 @@ function getFeverParams() {
   return { delay: 320, stay: 550, count: 3 };
 }
 
+let _assetLoaded = 0;
+let _assetFailed = false;
+const MAIN_ASSET_COUNT = 4; // title, chars, message, button
+
+function onAssetLoad() {
+  _assetLoaded++;
+  if (!_assetFailed && _assetLoaded >= MAIN_ASSET_COUNT) hideFallback();
+}
+function onAssetError(el) {
+  el.style.display = 'none';
+  _assetFailed = true;
+}
 function hideFallback() {
   document.getElementById('start-fallback').classList.add('hidden');
 }
