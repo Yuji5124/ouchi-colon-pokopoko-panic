@@ -33,12 +33,28 @@ body {
 }
 
 /* 画像レイヤー */
-.sl { position: absolute; display: block; pointer-events: none; }
-#sl-bg      { left: 0;    top: 0;    width: 390px; height: 844px; z-index: 1; }
-#sl-title   { left: 25px; top: 35px; width: 340px; height: 190px; z-index: 2; }
-#sl-chars   { left: 18px; top: 235px; width: 354px; height: 300px; z-index: 2; }
-#sl-message { left: 40px; top: 610px; width: 310px; height: 80px;  z-index: 2; }
-#sl-button  { left: 55px; top: 720px; width: 280px; height: 90px;  z-index: 2; }
+.sl { position: absolute; display: block; pointer-events: none; left: 0; top: 0; width: 390px; height: 844px; }
+#sl-bg      { z-index: 1; }
+#sl-title   { z-index: 2; animation: floatTitle   4.0s ease-in-out infinite; }
+#sl-chars   { z-index: 3; animation: floatChars   4.8s ease-in-out infinite; }
+#sl-message { z-index: 4; animation: floatMessage 3.6s ease-in-out infinite; }
+#sl-button  { z-index: 5; }
+
+@keyframes floatTitle {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-14px); }
+  100% { transform: translateY(0); }
+}
+@keyframes floatChars {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-22px); }
+  100% { transform: translateY(0); }
+}
+@keyframes floatMessage {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-16px); }
+  100% { transform: translateY(0); }
+}
 
 /* ボタンタップ領域（画像有無に関わらず常に有効） */
 .start-btn-area {
@@ -241,11 +257,11 @@ body {
 <!-- スタート画面 -->
 <div id="start-screen" class="screen">
   <!-- 画像レイヤー（素材があれば表示、なければ非表示） -->
-  <img class="sl" id="sl-bg"      src="assets/start/start_bg.png"      onerror="this.style.display='none'">
-  <img class="sl" id="sl-title"   src="assets/start/start_title.png"   onload="onAssetLoad()" onerror="onAssetError(this)">
-  <img class="sl" id="sl-chars"   src="assets/start/start_chars.png"   onload="onAssetLoad()" onerror="onAssetError(this)">
-  <img class="sl" id="sl-message" src="assets/start/start_message.png" onload="onAssetLoad()" onerror="onAssetError(this)">
-  <img class="sl" id="sl-button"  src="assets/start/start_button.png"  onload="onAssetLoad()" onerror="onAssetError(this)">
+  <img class="sl" id="sl-bg"      src="assets/start_390_layers/start_bg.png"      onload="onAssetLoad()" onerror="onAssetError()">
+  <img class="sl" id="sl-title"   src="assets/start_390_layers/start_title.png"   onload="onAssetLoad()" onerror="onAssetError()">
+  <img class="sl" id="sl-chars"   src="assets/start_390_layers/start_chars.png"   onload="onAssetLoad()" onerror="onAssetError()">
+  <img class="sl" id="sl-message" src="assets/start_390_layers/start_message.png" onload="onAssetLoad()" onerror="onAssetError()">
+  <img class="sl" id="sl-button"  src="assets/start_390_layers/start_button.png"  onload="onAssetLoad()" onerror="onAssetError()">
   <!-- ボタン領域（常にタップ有効） -->
   <div class="start-btn-area" onclick="startGame()"></div>
   <!-- フォールバック（画像がない場合に表示） -->
@@ -314,15 +330,17 @@ function getFeverParams() {
 
 let _assetLoaded = 0;
 let _assetFailed = false;
-const MAIN_ASSET_COUNT = 4; // title, chars, message, button
+const MAIN_ASSET_COUNT = 5;
 
 function onAssetLoad() {
   _assetLoaded++;
   if (!_assetFailed && _assetLoaded >= MAIN_ASSET_COUNT) hideFallback();
 }
-function onAssetError(el) {
-  el.style.display = 'none';
-  _assetFailed = true;
+function onAssetError() {
+  if (!_assetFailed) {
+    _assetFailed = true;
+    document.querySelectorAll('.sl').forEach(el => { el.style.display = 'none'; });
+  }
 }
 function hideFallback() {
   document.getElementById('start-fallback').classList.add('hidden');
