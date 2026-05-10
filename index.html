@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0">
+<title>おうちコロン ぽこぽこパニック</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 390px;
+  height: 844px;
+  margin: 0 auto;
+  background: #f0e8d0;
+  font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+.screen {
+  width: 390px;
+  height: 844px;
+  position: absolute;
+  top: 0; left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.hidden { display: none !important; }
+
+/* スタート画面 */
+#start-screen {
+  background: linear-gradient(180deg, #87ceeb 0%, #c8e6c9 100%);
+}
+.title-main {
+  font-size: 28px;
+  font-weight: bold;
+  color: #3a5a1a;
+  text-align: center;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 0 #fff;
+}
+.title-sub {
+  font-size: 36px;
+  font-weight: bold;
+  color: #e05050;
+  text-align: center;
+  margin-bottom: 40px;
+  text-shadow: 2px 2px 0 #fff;
+}
+.chara-preview {
+  font-size: 80px;
+  margin-bottom: 40px;
+  animation: bounce 0.8s infinite alternate;
+}
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-12px); }
+}
+
+/* ゲーム画面 */
+#game-screen {
+  background: linear-gradient(180deg, #c8e6c9 0%, #a5d6a7 100%);
+  justify-content: flex-start;
+  padding-top: 20px;
+}
+.hud {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  padding: 0 20px;
+  margin-bottom: 20px;
+}
+.hud-box {
+  background: rgba(255,255,255,0.7);
+  border-radius: 12px;
+  padding: 8px 20px;
+  text-align: center;
+}
+.hud-label { font-size: 13px; color: #555; }
+.hud-value { font-size: 32px; font-weight: bold; color: #2a5a00; }
+#time-value { color: #c00; }
+
+.field {
+  display: grid;
+  grid-template-columns: repeat(3, 110px);
+  grid-template-rows: repeat(3, 110px);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.hole {
+  width: 110px;
+  height: 110px;
+  background: #6d4c1f;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  box-shadow: inset 0 8px 16px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.chara {
+  font-size: 64px;
+  position: absolute;
+  bottom: -80px;
+  transition: bottom 0.12s ease-out;
+  user-select: none;
+  pointer-events: none;
+}
+.chara.up { bottom: 4px; }
+.hit-effect {
+  position: absolute;
+  font-size: 28px;
+  font-weight: bold;
+  color: #ff0;
+  text-shadow: 1px 1px 0 #a00;
+  animation: hitAnim 0.5s forwards;
+  pointer-events: none;
+}
+@keyframes hitAnim {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-40px) scale(1.4); }
+}
+
+/* 終了画面 */
+#end-screen {
+  background: linear-gradient(180deg, #ffd54f 0%, #ffb300 100%);
+}
+.end-title {
+  font-size: 40px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 2px 2px 0 #c47a00;
+  margin-bottom: 16px;
+}
+.end-score-label { font-size: 18px; color: #5a3000; margin-bottom: 8px; }
+.end-score {
+  font-size: 72px;
+  font-weight: bold;
+  color: #c00;
+  text-shadow: 2px 2px 0 #fff;
+  margin-bottom: 48px;
+}
+
+/* ボタン */
+.btn {
+  padding: 16px 48px;
+  font-size: 22px;
+  font-weight: bold;
+  border: none;
+  border-radius: 40px;
+  cursor: pointer;
+  margin: 10px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+.btn-start  { background: #ff6b35; color: #fff; }
+.btn-retry  { background: #4caf50; color: #fff; }
+.btn-title  { background: #90a4ae; color: #fff; }
+</style>
+</head>
+<body>
+
+<!-- スタート画面 -->
+<div id="start-screen" class="screen">
+  <div class="title-main">おうちコロン</div>
+  <div class="title-sub">ぽこぽこパニック</div>
+  <div class="chara-preview">🟡</div>
+  <button class="btn btn-start" onclick="startGame()">START</button>
+</div>
+
+<!-- ゲーム画面 -->
+<div id="game-screen" class="screen hidden">
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">スコア</div>
+      <div class="hud-value" id="score-value">0</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">のこり</div>
+      <div class="hud-value" id="time-value">60</div>
+    </div>
+  </div>
+  <div class="field" id="field"></div>
+</div>
+
+<!-- 終了画面 -->
+<div id="end-screen" class="screen hidden">
+  <div class="end-title">ゲームオーバー！</div>
+  <div class="end-score-label">スコア</div>
+  <div class="end-score" id="final-score">0</div>
+  <button class="btn btn-retry" onclick="startGame()">もう一回</button>
+  <button class="btn btn-title" onclick="showStart()">タイトルへ</button>
+</div>
+
+<script>
+const HOLES = 9;
+const GAME_TIME = 60;
+const APPEAR_MIN = 600;
+const APPEAR_MAX = 1200;
+const STAY_TIME = 900;
+
+let score = 0;
+let timeLeft = GAME_TIME;
+let timerInterval = null;
+let spawnTimeout = null;
+let activeHole = -1;
+let hideTimeout = null;
+let holes = [];
+
+function show(id) {
+  ['start-screen','game-screen','end-screen'].forEach(s => {
+    document.getElementById(s).classList.add('hidden');
+  });
+  document.getElementById(id).classList.remove('hidden');
+}
+
+function showStart() { show('start-screen'); }
+
+function startGame() {
+  score = 0;
+  timeLeft = GAME_TIME;
+  activeHole = -1;
+  clearInterval(timerInterval);
+  clearTimeout(spawnTimeout);
+  clearTimeout(hideTimeout);
+
+  buildField();
+  updateHUD();
+  show('game-screen');
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateHUD();
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+
+  scheduleSpawn();
+}
+
+function buildField() {
+  const field = document.getElementById('field');
+  field.innerHTML = '';
+  holes = [];
+  for (let i = 0; i < HOLES; i++) {
+    const div = document.createElement('div');
+    div.className = 'hole';
+    div.dataset.index = i;
+    div.addEventListener('click', () => hitHole(i));
+
+    const chara = document.createElement('div');
+    chara.className = 'chara';
+    chara.textContent = '🟡';
+    div.appendChild(chara);
+
+    field.appendChild(div);
+    holes.push({ el: div, chara });
+  }
+}
+
+function scheduleSpawn() {
+  if (timeLeft <= 0) return;
+  const delay = APPEAR_MIN + Math.random() * (APPEAR_MAX - APPEAR_MIN);
+  spawnTimeout = setTimeout(spawnChara, delay);
+}
+
+function spawnChara() {
+  if (timeLeft <= 0) return;
+  hideActive();
+
+  const idx = Math.floor(Math.random() * HOLES);
+  activeHole = idx;
+  holes[idx].chara.classList.add('up');
+
+  hideTimeout = setTimeout(() => {
+    hideActive();
+    scheduleSpawn();
+  }, STAY_TIME);
+}
+
+function hideActive() {
+  if (activeHole >= 0) {
+    holes[activeHole].chara.classList.remove('up');
+    activeHole = -1;
+  }
+  clearTimeout(hideTimeout);
+}
+
+function hitHole(idx) {
+  if (idx !== activeHole) return;
+  score += 10;
+  updateHUD();
+
+  holes[idx].chara.classList.remove('up');
+  activeHole = -1;
+  clearTimeout(hideTimeout);
+
+  showHitEffect(holes[idx].el);
+  scheduleSpawn();
+}
+
+function showHitEffect(el) {
+  const ef = document.createElement('div');
+  ef.className = 'hit-effect';
+  ef.textContent = '+10';
+  el.appendChild(ef);
+  ef.addEventListener('animationend', () => ef.remove());
+}
+
+function updateHUD() {
+  document.getElementById('score-value').textContent = score;
+  document.getElementById('time-value').textContent = timeLeft;
+}
+
+function endGame() {
+  clearInterval(timerInterval);
+  clearTimeout(spawnTimeout);
+  clearTimeout(hideTimeout);
+  if (activeHole >= 0) {
+    holes[activeHole].chara.classList.remove('up');
+    activeHole = -1;
+  }
+  document.getElementById('final-score').textContent = score;
+  show('end-screen');
+}
+</script>
+</body>
+</html>
