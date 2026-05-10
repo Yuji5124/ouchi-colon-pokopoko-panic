@@ -140,6 +140,7 @@ body {
   height: 844px;
   z-index: 2;
 }
+#game-screen, .field, .hole { touch-action: manipulation; }
 .hole {
   position: absolute;
   width: 110px;
@@ -370,6 +371,7 @@ const holePositions = [
   { x: 82,  y: 550 }, { x: 195, y: 550 }, { x: 308, y: 550 },
 ];
 const FEVER_START = 5; // 残り秒数
+const HIT_RADIUS = 72; // タップ判定半径px（厳しい場合は最大78まで）
 
 const characterTypes = [
   { id: 'muro',     label: 'ムーロ',   emoji: '🟢', point:  10, image: 'assets/characters/muro.png' },
@@ -502,6 +504,33 @@ function buildField() {
 
     field.appendChild(div);
     holes.push({ el: div, chara, charaImg: img, charaFallback: fb });
+  }
+
+  field.addEventListener('pointerdown', handleFieldPointerDown);
+}
+
+function handleFieldPointerDown(e) {
+  if (activeHoles.size === 0) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const tx = e.clientX - rect.left;
+  const ty = e.clientY - rect.top;
+
+  let nearestIdx = -1;
+  let nearestDist = Infinity;
+  activeHoles.forEach(idx => {
+    const pos = holePositions[idx];
+    const dx = tx - pos.x;
+    const dy = ty - pos.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (dist < nearestDist) {
+      nearestDist = dist;
+      nearestIdx = idx;
+    }
+  });
+
+  if (nearestIdx !== -1 && nearestDist <= HIT_RADIUS) {
+    e.preventDefault();
+    hitHole(nearestIdx);
   }
 }
 
