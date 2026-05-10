@@ -180,6 +180,31 @@ body {
 .btn-start  { background: #ff6b35; color: #fff; }
 .btn-retry  { background: #4caf50; color: #fff; }
 .btn-title  { background: #90a4ae; color: #fff; }
+
+/* フィーバー */
+#game-screen.fever {
+  background: linear-gradient(180deg, #ff8a65 0%, #ffd54f 100%);
+}
+.fever-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  font-size: 52px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 3px 3px 0 #c00;
+  white-space: nowrap;
+  animation: feverPop 0.6s forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+@keyframes feverPop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  50%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  80%  { transform: translate(-50%, -50%) scale(1.0); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.0); }
+}
 </style>
 </head>
 <body>
@@ -221,17 +246,31 @@ body {
 <script>
 const HOLES = 9;
 const GAME_TIME = 60;
-const APPEAR_MIN = 600;
-const APPEAR_MAX = 1200;
-const STAY_TIME = 900;
+const FEVER_START = 5; // 残り秒数
 
 let score = 0;
 let timeLeft = GAME_TIME;
 let timerInterval = null;
 let spawnTimeout = null;
-let activeHole = -1;
-let hideTimeout = null;
+let hideTimeouts = [];
+let activeHoles = new Set();
 let holes = [];
+let isFever = false;
+let feverAnnounced = false;
+
+// 経過時間に応じたスポーンパラメータ
+function getParams() {
+  const elapsed = GAME_TIME - timeLeft;
+  if (elapsed < 5)  return { delay: 1100, stay: 1000, count: 1 };
+  if (elapsed < 20) return { delay: 900,  stay: 900,  count: 1 };
+  if (elapsed < 35) return { delay: 700,  stay: 750,  count: 1 };
+  if (elapsed < 50) return { delay: 500,  stay: 650,  count: 1 };
+                    return { delay: 380,  stay: 600,  count: 1 };
+}
+
+function getFeverParams() {
+  return { delay: 320, stay: 550, count: 3 };
+}
 
 function show(id) {
   ['start-screen','game-screen'].forEach(s => {
@@ -246,18 +285,23 @@ function showStart() { show('start-screen'); }
 function startGame() {
   score = 0;
   timeLeft = GAME_TIME;
-  activeHole = -1;
+  isFever = false;
+  feverAnnounced = false;
+  activeHoles = new Set();
   clearInterval(timerInterval);
   clearTimeout(spawnTimeout);
-  clearTimeout(hideTimeout);
+  hideTimeouts.forEach(t => clearTimeout(t));
+  hideTimeouts = [];
 
   buildField();
   updateHUD();
   show('game-screen');
+  document.getElementById('game-screen').classList.remove('fever');
 
   timerInterval = setInterval(() => {
     timeLeft--;
     updateHUD();
+    if (timeLeft <= FEVER_START && !feverAnnounced) enterFever();
     if (timeLeft <= 0) endGame();
   }, 1000);
 
@@ -271,7 +315,6 @@ function buildField() {
   for (let i = 0; i < HOLES; i++) {
     const div = document.createElement('div');
     div.className = 'hole';
-    div.dataset.index = i;
     div.addEventListener('click', () => hitHole(i));
 
     const chara = document.createElement('div');
@@ -284,45 +327,84 @@ function buildField() {
   }
 }
 
+function enterFever() {
+  isFever = true;
+  feverAnnounced = true;
+  document.getElementById('game-screen').classList.add('fever');
+
+  // 既存スポーンをリセット
+  clearTimeout(spawnTimeout);
+  hideTimeouts.forEach(t => clearTimeout(t));
+  hideTimeouts = [];
+  hideAll();
+
+  // フィーバーバナー表示
+  const banner = document.createElement('div');
+  banner.className = 'fever-banner';
+  banner.textContent = '🔥 フィーバー！';
+  document.getElementById('game-screen').appendChild(banner);
+  banner.addEventListener('animationend', () => banner.remove());
+
+  scheduleSpawn();
+}
+
 function scheduleSpawn() {
   if (timeLeft <= 0) return;
-  const delay = APPEAR_MIN + Math.random() * (APPEAR_MAX - APPEAR_MIN);
-  spawnTimeout = setTimeout(spawnChara, delay);
+  const p = isFever ? getFeverParams() : getParams();
+  const jitter = (Math.random() - 0.5) * 100;
+  spawnTimeout = setTimeout(spawnCharas, p.delay + jitter);
 }
 
-function spawnChara() {
+function spawnCharas() {
   if (timeLeft <= 0) return;
-  hideActive();
+  const p = isFever ? getFeverParams() : getParams();
 
-  const idx = Math.floor(Math.random() * HOLES);
-  activeHole = idx;
-  holes[idx].chara.classList.add('up');
+  // フィーバー: 空き穴からcount個選ぶ
+  const available = [];
+  for (let i = 0; i < HOLES; i++) {
+    if (!activeHoles.has(i)) available.push(i);
+  }
+  shuffle(available);
+  const targets = available.slice(0, p.count);
 
-  hideTimeout = setTimeout(() => {
-    hideActive();
-    scheduleSpawn();
-  }, STAY_TIME);
+  targets.forEach(idx => {
+    activeHoles.add(idx);
+    holes[idx].chara.classList.add('up');
+    const t = setTimeout(() => {
+      hideSingle(idx);
+      // 全員引っ込んだら次スポーン（通常時のみ）
+      if (!isFever && activeHoles.size === 0) scheduleSpawn();
+    }, p.stay);
+    hideTimeouts.push(t);
+  });
+
+  // フィーバー中は連続スポーン
+  if (isFever) scheduleSpawn();
 }
 
-function hideActive() {
-  if (activeHole >= 0) {
-    holes[activeHole].chara.classList.remove('up');
-    activeHole = -1;
+function hideSingle(idx) {
+  if (activeHoles.has(idx)) {
+    holes[idx].chara.classList.remove('up');
+    activeHoles.delete(idx);
   }
-  clearTimeout(hideTimeout);
+}
+
+function hideAll() {
+  activeHoles.forEach(idx => holes[idx].chara.classList.remove('up'));
+  activeHoles.clear();
 }
 
 function hitHole(idx) {
-  if (idx !== activeHole) return;
+  if (!activeHoles.has(idx)) return;
   score += 10;
   updateHUD();
-
-  holes[idx].chara.classList.remove('up');
-  activeHole = -1;
-  clearTimeout(hideTimeout);
-
+  hideSingle(idx);
   showHitEffect(holes[idx].el);
-  scheduleSpawn();
+  // 通常時: 当てたら即次スポーン
+  if (!isFever && activeHoles.size === 0) {
+    clearTimeout(spawnTimeout);
+    scheduleSpawn();
+  }
 }
 
 function showHitEffect(el) {
@@ -333,6 +415,13 @@ function showHitEffect(el) {
   ef.addEventListener('animationend', () => ef.remove());
 }
 
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
 function updateHUD() {
   document.getElementById('score-value').textContent = score;
   document.getElementById('time-value').textContent = timeLeft;
@@ -341,11 +430,9 @@ function updateHUD() {
 function endGame() {
   clearInterval(timerInterval);
   clearTimeout(spawnTimeout);
-  clearTimeout(hideTimeout);
-  if (activeHole >= 0) {
-    holes[activeHole].chara.classList.remove('up');
-    activeHole = -1;
-  }
+  hideTimeouts.forEach(t => clearTimeout(t));
+  hideTimeouts = [];
+  hideAll();
   document.getElementById('final-score').textContent = score;
   document.getElementById('result-overlay').classList.remove('hidden');
 }
