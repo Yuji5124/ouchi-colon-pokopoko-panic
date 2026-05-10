@@ -103,18 +103,25 @@ body {
   to   { transform: translateY(-12px); }
 }
 
+/* プレイ画面レイヤー */
+.pl { position: absolute; display: block; pointer-events: none; left: 0; top: 0; width: 390px; height: 844px; }
+#pl-bg      { z-index: 1; }
+#pl-overlay { z-index: 3; }
+
 /* ゲーム画面 */
 #game-screen {
   background: linear-gradient(180deg, #c8e6c9 0%, #a5d6a7 100%);
-  justify-content: flex-start;
-  padding-top: 20px;
 }
 .hud {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  width: 390px;
+  padding: 0 20px;
   display: flex;
   justify-content: space-around;
-  width: 100%;
-  padding: 0 20px;
-  margin-bottom: 20px;
+  z-index: 4;
+  pointer-events: none;
 }
 .hud-box {
   background: rgba(255,255,255,0.7);
@@ -127,13 +134,14 @@ body {
 #time-value { color: #c00; }
 
 .field {
-  display: grid;
-  grid-template-columns: repeat(3, 110px);
-  grid-template-rows: repeat(3, 110px);
-  gap: 10px;
-  margin-bottom: 20px;
+  position: absolute;
+  top: 0; left: 0;
+  width: 390px;
+  height: 844px;
+  z-index: 2;
 }
 .hole {
+  position: absolute;
   width: 110px;
   height: 110px;
   background: #6d4c1f;
@@ -142,7 +150,6 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  position: relative;
   box-shadow: inset 0 8px 16px rgba(0,0,0,0.5);
   overflow: hidden;
 }
@@ -275,6 +282,13 @@ body {
 
 <!-- ゲーム画面 -->
 <div id="game-screen" class="screen hidden">
+  <!-- 背景レイヤー z-index:1 -->
+  <img class="pl" id="pl-bg" src="assets/play/play_bg.png" onerror="this.style.display='none'">
+  <!-- フィールド（穴＋キャラ） z-index:2 -->
+  <div class="field" id="field"></div>
+  <!-- 穴前面オーバーレイ z-index:3 -->
+  <img class="pl" id="pl-overlay" src="assets/play/holes_overlay.png" onerror="this.style.display='none'">
+  <!-- HUD z-index:4 -->
   <div class="hud">
     <div class="hud-box">
       <div class="hud-label">スコア</div>
@@ -285,7 +299,6 @@ body {
       <div class="hud-value" id="time-value">60</div>
     </div>
   </div>
-  <div class="field" id="field"></div>
 
   <!-- リザルトオーバーレイ -->
   <div id="result-overlay" class="hidden">
@@ -302,6 +315,11 @@ body {
 <script>
 const HOLES = 9;
 const GAME_TIME = 60;
+const holePositions = [
+  { x: 82,  y: 280 }, { x: 195, y: 280 }, { x: 308, y: 280 },
+  { x: 82,  y: 415 }, { x: 195, y: 415 }, { x: 308, y: 415 },
+  { x: 82,  y: 550 }, { x: 195, y: 550 }, { x: 308, y: 550 },
+];
 const FEVER_START = 5; // 残り秒数
 
 let score = 0;
@@ -387,8 +405,12 @@ function buildField() {
   field.innerHTML = '';
   holes = [];
   for (let i = 0; i < HOLES; i++) {
+    const pos = holePositions[i];
     const div = document.createElement('div');
     div.className = 'hole';
+    div.style.left = pos.x + 'px';
+    div.style.top  = pos.y + 'px';
+    div.style.transform = 'translate(-50%, -50%)';
     div.addEventListener('click', () => hitHole(i));
 
     const chara = document.createElement('div');
