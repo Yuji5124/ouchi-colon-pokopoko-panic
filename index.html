@@ -33,12 +33,28 @@ body {
 }
 
 /* 画像レイヤー */
-.sl { position: absolute; display: block; pointer-events: none; }
-#sl-bg      { left: 0;    top: 0;    width: 390px; height: 844px; z-index: 1; }
-#sl-title   { left: 25px; top: 35px; width: 340px; height: 190px; z-index: 2; }
-#sl-chars   { left: 18px; top: 235px; width: 354px; height: 300px; z-index: 2; }
-#sl-message { left: 40px; top: 610px; width: 310px; height: 80px;  z-index: 2; }
-#sl-button  { left: 55px; top: 720px; width: 280px; height: 90px;  z-index: 2; }
+.sl { position: absolute; display: block; pointer-events: none; left: 0; top: 0; width: 390px; height: 844px; }
+#sl-bg      { z-index: 1; }
+#sl-title   { z-index: 2; animation: floatTitle   4.0s ease-in-out infinite; }
+#sl-chars   { z-index: 3; animation: floatChars   4.8s ease-in-out infinite; }
+#sl-message { z-index: 4; animation: floatMessage 3.6s ease-in-out infinite; }
+#sl-button  { z-index: 5; }
+
+@keyframes floatTitle {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-14px); }
+  100% { transform: translateY(0); }
+}
+@keyframes floatChars {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-22px); }
+  100% { transform: translateY(0); }
+}
+@keyframes floatMessage {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-16px); }
+  100% { transform: translateY(0); }
+}
 
 /* ボタンタップ領域（画像有無に関わらず常に有効） */
 .start-btn-area {
@@ -87,18 +103,25 @@ body {
   to   { transform: translateY(-12px); }
 }
 
+/* プレイ画面レイヤー */
+.pl { position: absolute; display: block; pointer-events: none; left: 0; top: 0; width: 390px; height: 844px; }
+#pl-bg      { z-index: 1; }
+#pl-overlay { z-index: 3; display: none; }
+
 /* ゲーム画面 */
 #game-screen {
   background: linear-gradient(180deg, #c8e6c9 0%, #a5d6a7 100%);
-  justify-content: flex-start;
-  padding-top: 20px;
 }
 .hud {
+  position: absolute;
+  top: 20px;
+  left: 0;
+  width: 390px;
+  padding: 0 20px;
   display: flex;
   justify-content: space-around;
-  width: 100%;
-  padding: 0 20px;
-  margin-bottom: 20px;
+  z-index: 4;
+  pointer-events: none;
 }
 .hud-box {
   background: rgba(255,255,255,0.7);
@@ -111,13 +134,14 @@ body {
 #time-value { color: #c00; }
 
 .field {
-  display: grid;
-  grid-template-columns: repeat(3, 110px);
-  grid-template-rows: repeat(3, 110px);
-  gap: 10px;
-  margin-bottom: 20px;
+  position: absolute;
+  top: 0; left: 0;
+  width: 390px;
+  height: 844px;
+  z-index: 2;
 }
 .hole {
+  position: absolute;
   width: 110px;
   height: 110px;
   background: #6d4c1f;
@@ -126,28 +150,40 @@ body {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  position: relative;
   box-shadow: inset 0 8px 16px rgba(0,0,0,0.5);
   overflow: hidden;
 }
 .chara {
   font-size: 64px;
   position: absolute;
-  bottom: -80px;
-  transition: bottom 0.12s ease-out;
+  bottom: -88px;
+  opacity: 0;
+  transform: translateY(30px) scale(0.6);
+  transition:
+    bottom 0.18s cubic-bezier(.2, 1.4, .4, 1),
+    transform 0.18s cubic-bezier(.2, 1.4, .4, 1),
+    opacity 0.12s;
   user-select: none;
   pointer-events: none;
 }
-.chara.up { bottom: 4px; }
+.chara.up {
+  bottom: 8px;
+  opacity: 1;
+  transform: translateY(0) scale(1.15);
+}
 .hit-effect {
   position: absolute;
-  font-size: 28px;
+  z-index: 6;
+  font-size: 24px;
   font-weight: bold;
   color: #ff0;
   text-shadow: 1px 1px 0 #a00;
-  animation: hitAnim 0.5s forwards;
+  animation: hitAnim 0.6s forwards;
   pointer-events: none;
+  white-space: nowrap;
 }
+.hit-effect.miss  { color: #f55; text-shadow: 1px 1px 0 #700; }
+.hit-effect.lucky { color: #0f0; text-shadow: 1px 1px 0 #060; }
 @keyframes hitAnim {
   0%   { opacity: 1; transform: translateY(0) scale(1); }
   100% { opacity: 0; transform: translateY(-40px) scale(1.4); }
@@ -241,11 +277,11 @@ body {
 <!-- スタート画面 -->
 <div id="start-screen" class="screen">
   <!-- 画像レイヤー（素材があれば表示、なければ非表示） -->
-  <img class="sl" id="sl-bg"      src="assets/start/start_bg.png"      onerror="this.style.display='none'">
-  <img class="sl" id="sl-title"   src="assets/start/start_title.png"   onload="onAssetLoad()" onerror="onAssetError(this)">
-  <img class="sl" id="sl-chars"   src="assets/start/start_chars.png"   onload="onAssetLoad()" onerror="onAssetError(this)">
-  <img class="sl" id="sl-message" src="assets/start/start_message.png" onload="onAssetLoad()" onerror="onAssetError(this)">
-  <img class="sl" id="sl-button"  src="assets/start/start_button.png"  onload="onAssetLoad()" onerror="onAssetError(this)">
+  <img class="sl" id="sl-bg"      src="assets/start_390_layers/start_bg.png"      onload="onAssetLoad()" onerror="onAssetError()">
+  <img class="sl" id="sl-title"   src="assets/start_390_layers/start_title.png"   onload="onAssetLoad()" onerror="onAssetError()">
+  <img class="sl" id="sl-chars"   src="assets/start_390_layers/start_chars.png"   onload="onAssetLoad()" onerror="onAssetError()">
+  <img class="sl" id="sl-message" src="assets/start_390_layers/start_message.png" onload="onAssetLoad()" onerror="onAssetError()">
+  <img class="sl" id="sl-button"  src="assets/start_390_layers/start_button.png"  onload="onAssetLoad()" onerror="onAssetError()">
   <!-- ボタン領域（常にタップ有効） -->
   <div class="start-btn-area" onclick="startGame()"></div>
   <!-- フォールバック（画像がない場合に表示） -->
@@ -259,6 +295,13 @@ body {
 
 <!-- ゲーム画面 -->
 <div id="game-screen" class="screen hidden">
+  <!-- 背景レイヤー z-index:1 -->
+  <img class="pl" id="pl-bg" src="assets/play/play_bg.png" onerror="this.style.display='none'">
+  <!-- フィールド（穴＋キャラ） z-index:2 -->
+  <div class="field" id="field"></div>
+  <!-- 穴前面オーバーレイ z-index:3 -->
+  <img class="pl" id="pl-overlay" src="assets/play/holes_overlay.png" onerror="this.style.display='none'">
+  <!-- HUD z-index:4 -->
   <div class="hud">
     <div class="hud-box">
       <div class="hud-label">スコア</div>
@@ -269,7 +312,6 @@ body {
       <div class="hud-value" id="time-value">60</div>
     </div>
   </div>
-  <div class="field" id="field"></div>
 
   <!-- リザルトオーバーレイ -->
   <div id="result-overlay" class="hidden">
@@ -286,7 +328,27 @@ body {
 <script>
 const HOLES = 9;
 const GAME_TIME = 60;
+const holePositions = [
+  { x: 82,  y: 280 }, { x: 195, y: 280 }, { x: 308, y: 280 },
+  { x: 82,  y: 415 }, { x: 195, y: 415 }, { x: 308, y: 415 },
+  { x: 82,  y: 550 }, { x: 195, y: 550 }, { x: 308, y: 550 },
+];
 const FEVER_START = 5; // 残り秒数
+
+const characterTypes = [
+  { id: 'muro',     label: 'ムーロ',   emoji: '🟢', point:  10 },
+  { id: 'takoron',  label: 'タコロン', emoji: '🐙', point:  10 },
+  { id: 'kakubake', label: 'カクバケ', emoji: '👻', point: -10 },
+  { id: 'pitokoro', label: 'ピトコロ', emoji: '🐞', point:  20 },
+  { id: 'mikaro',   label: 'ミカロ',   emoji: '🟡', point:  10 },
+];
+const spawnTable = [
+  characterTypes[0], characterTypes[0],
+  characterTypes[1], characterTypes[1],
+  characterTypes[2], characterTypes[2],
+  characterTypes[3],
+  characterTypes[4],
+];
 
 let score = 0;
 let timeLeft = GAME_TIME;
@@ -314,15 +376,17 @@ function getFeverParams() {
 
 let _assetLoaded = 0;
 let _assetFailed = false;
-const MAIN_ASSET_COUNT = 4; // title, chars, message, button
+const MAIN_ASSET_COUNT = 5;
 
 function onAssetLoad() {
   _assetLoaded++;
   if (!_assetFailed && _assetLoaded >= MAIN_ASSET_COUNT) hideFallback();
 }
-function onAssetError(el) {
-  el.style.display = 'none';
-  _assetFailed = true;
+function onAssetError() {
+  if (!_assetFailed) {
+    _assetFailed = true;
+    document.querySelectorAll('.sl').forEach(el => { el.style.display = 'none'; });
+  }
 }
 function hideFallback() {
   document.getElementById('start-fallback').classList.add('hidden');
@@ -369,8 +433,12 @@ function buildField() {
   field.innerHTML = '';
   holes = [];
   for (let i = 0; i < HOLES; i++) {
+    const pos = holePositions[i];
     const div = document.createElement('div');
     div.className = 'hole';
+    div.style.left = pos.x + 'px';
+    div.style.top  = pos.y + 'px';
+    div.style.transform = 'translate(-50%, -50%)';
     div.addEventListener('click', () => hitHole(i));
 
     const chara = document.createElement('div');
@@ -424,6 +492,9 @@ function spawnCharas() {
   const targets = available.slice(0, p.count);
 
   targets.forEach(idx => {
+    const type = spawnTable[Math.floor(Math.random() * spawnTable.length)];
+    holes[idx].currentType = type;
+    holes[idx].chara.textContent = type.emoji;
     activeHoles.add(idx);
     holes[idx].chara.classList.add('up');
     const t = setTimeout(() => {
@@ -452,10 +523,11 @@ function hideAll() {
 
 function hitHole(idx) {
   if (!activeHoles.has(idx)) return;
-  score += 10;
+  const type = holes[idx].currentType || characterTypes[0];
+  score = Math.max(0, score + type.point);
   updateHUD();
   hideSingle(idx);
-  showHitEffect(holes[idx].el);
+  showHitEffect(holes[idx].el, type);
   // 通常時: 当てたら即次スポーン
   if (!isFever && activeHoles.size === 0) {
     clearTimeout(spawnTimeout);
@@ -463,11 +535,25 @@ function hitHole(idx) {
   }
 }
 
-function showHitEffect(el) {
+function showHitEffect(el, type) {
   const ef = document.createElement('div');
-  ef.className = 'hit-effect';
-  ef.textContent = '+10';
-  el.appendChild(ef);
+  if (type.id === 'kakubake') {
+    ef.className = 'hit-effect miss';
+    ef.textContent = 'だめ！ -10';
+  } else if (type.id === 'pitokoro') {
+    ef.className = 'hit-effect lucky';
+    ef.textContent = 'ラッキー！ +20';
+  } else {
+    ef.className = 'hit-effect';
+    ef.textContent = 'ぽこ！ +10';
+  }
+  const gameEl = document.getElementById('game-screen');
+  const gameRect = gameEl.getBoundingClientRect();
+  const holeRect = el.getBoundingClientRect();
+  ef.style.left      = (holeRect.left - gameRect.left + holeRect.width / 2) + 'px';
+  ef.style.top       = (holeRect.top  - gameRect.top  - 10) + 'px';
+  ef.style.transform = 'translate(-50%, -50%)';
+  gameEl.appendChild(ef);
   ef.addEventListener('animationend', () => ef.remove());
 }
 
