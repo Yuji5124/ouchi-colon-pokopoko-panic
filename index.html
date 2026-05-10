@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=390, initial-scale=1.0">
+<title>おうちコロン ぽこぽこパニック</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  width: 390px;
+  height: 844px;
+  margin: 0 auto;
+  background: #f0e8d0;
+  font-family: 'Hiragino Kaku Gothic Pro', 'Meiryo', sans-serif;
+  overflow: hidden;
+  position: relative;
+}
+.screen {
+  width: 390px;
+  height: 844px;
+  position: absolute;
+  top: 0; left: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.hidden { display: none !important; }
+
+/* スタート画面 */
+#start-screen {
+  background: linear-gradient(180deg, #87ceeb 0%, #c8e6c9 100%);
+}
+
+/* 画像レイヤー */
+.sl { position: absolute; display: block; pointer-events: none; }
+#sl-bg      { left: 0;    top: 0;    width: 390px; height: 844px; z-index: 1; }
+#sl-title   { left: 25px; top: 35px; width: 340px; height: 190px; z-index: 2; }
+#sl-chars   { left: 18px; top: 235px; width: 354px; height: 300px; z-index: 2; }
+#sl-message { left: 40px; top: 610px; width: 310px; height: 80px;  z-index: 2; }
+#sl-button  { left: 55px; top: 720px; width: 280px; height: 90px;  z-index: 2; }
+
+/* ボタンタップ領域（画像有無に関わらず常に有効） */
+.start-btn-area {
+  position: absolute;
+  left: 55px; top: 720px; width: 280px; height: 90px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+/* フォールバックコンテンツ */
+#start-fallback {
+  position: relative;
+  z-index: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+#start-fallback.hidden { display: none !important; }
+.title-main {
+  font-size: 28px;
+  font-weight: bold;
+  color: #3a5a1a;
+  text-align: center;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  text-shadow: 2px 2px 0 #fff;
+}
+.title-sub {
+  font-size: 36px;
+  font-weight: bold;
+  color: #e05050;
+  text-align: center;
+  margin-bottom: 40px;
+  text-shadow: 2px 2px 0 #fff;
+}
+.chara-preview {
+  font-size: 80px;
+  margin-bottom: 40px;
+  animation: bounce 0.8s infinite alternate;
+}
+@keyframes bounce {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-12px); }
+}
+
+/* ゲーム画面 */
+#game-screen {
+  background: linear-gradient(180deg, #c8e6c9 0%, #a5d6a7 100%);
+  justify-content: flex-start;
+  padding-top: 20px;
+}
+.hud {
+  display: flex;
+  justify-content: space-around;
+  width: 100%;
+  padding: 0 20px;
+  margin-bottom: 20px;
+}
+.hud-box {
+  background: rgba(255,255,255,0.7);
+  border-radius: 12px;
+  padding: 8px 20px;
+  text-align: center;
+}
+.hud-label { font-size: 13px; color: #555; }
+.hud-value { font-size: 32px; font-weight: bold; color: #2a5a00; }
+#time-value { color: #c00; }
+
+.field {
+  display: grid;
+  grid-template-columns: repeat(3, 110px);
+  grid-template-rows: repeat(3, 110px);
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.hole {
+  width: 110px;
+  height: 110px;
+  background: #6d4c1f;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+  box-shadow: inset 0 8px 16px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.chara {
+  font-size: 64px;
+  position: absolute;
+  bottom: -80px;
+  transition: bottom 0.12s ease-out;
+  user-select: none;
+  pointer-events: none;
+}
+.chara.up { bottom: 4px; }
+.hit-effect {
+  position: absolute;
+  font-size: 28px;
+  font-weight: bold;
+  color: #ff0;
+  text-shadow: 1px 1px 0 #a00;
+  animation: hitAnim 0.5s forwards;
+  pointer-events: none;
+}
+@keyframes hitAnim {
+  0%   { opacity: 1; transform: translateY(0) scale(1); }
+  100% { opacity: 0; transform: translateY(-40px) scale(1.4); }
+}
+
+/* リザルトオーバーレイ */
+#result-overlay {
+  position: absolute;
+  top: 0; left: 0;
+  width: 390px;
+  height: 844px;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+#result-overlay.hidden { display: none !important; }
+.result-panel {
+  background: linear-gradient(180deg, #ffd54f 0%, #ffb300 100%);
+  border-radius: 24px;
+  padding: 40px 48px;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.end-title {
+  font-size: 40px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 2px 2px 0 #c47a00;
+  margin-bottom: 16px;
+}
+.end-score-label { font-size: 18px; color: #5a3000; margin-bottom: 8px; }
+.end-score {
+  font-size: 72px;
+  font-weight: bold;
+  color: #c00;
+  text-shadow: 2px 2px 0 #fff;
+  margin-bottom: 32px;
+}
+
+/* ボタン */
+.btn {
+  padding: 16px 48px;
+  font-size: 22px;
+  font-weight: bold;
+  border: none;
+  border-radius: 40px;
+  cursor: pointer;
+  margin: 10px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.3);
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+.btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.3);
+}
+.btn-start  { background: #ff6b35; color: #fff; }
+.btn-retry  { background: #4caf50; color: #fff; }
+.btn-title  { background: #90a4ae; color: #fff; }
+
+/* フィーバー */
+#game-screen.fever {
+  background: linear-gradient(180deg, #ff8a65 0%, #ffd54f 100%);
+}
+.fever-banner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.5);
+  font-size: 52px;
+  font-weight: bold;
+  color: #fff;
+  text-shadow: 3px 3px 0 #c00;
+  white-space: nowrap;
+  animation: feverPop 0.6s forwards;
+  pointer-events: none;
+  z-index: 5;
+}
+@keyframes feverPop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  50%  { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+  80%  { transform: translate(-50%, -50%) scale(1.0); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(1.0); }
+}
+</style>
+</head>
+<body>
+
+<!-- スタート画面 -->
+<div id="start-screen" class="screen">
+  <!-- 画像レイヤー（素材があれば表示、なければ非表示） -->
+  <img class="sl" id="sl-bg"      src="assets/start/start_bg.png"      onerror="this.style.display='none'">
+  <img class="sl" id="sl-title"   src="assets/start/start_title.png"   onload="onAssetLoad()" onerror="onAssetError(this)">
+  <img class="sl" id="sl-chars"   src="assets/start/start_chars.png"   onload="onAssetLoad()" onerror="onAssetError(this)">
+  <img class="sl" id="sl-message" src="assets/start/start_message.png" onload="onAssetLoad()" onerror="onAssetError(this)">
+  <img class="sl" id="sl-button"  src="assets/start/start_button.png"  onload="onAssetLoad()" onerror="onAssetError(this)">
+  <!-- ボタン領域（常にタップ有効） -->
+  <div class="start-btn-area" onclick="startGame()"></div>
+  <!-- フォールバック（画像がない場合に表示） -->
+  <div id="start-fallback">
+    <div class="title-main">おうちコロン</div>
+    <div class="title-sub">ぽこぽこパニック</div>
+    <div class="chara-preview">🟡</div>
+    <button class="btn btn-start" onclick="startGame()">START</button>
+  </div>
+</div>
+
+<!-- ゲーム画面 -->
+<div id="game-screen" class="screen hidden">
+  <div class="hud">
+    <div class="hud-box">
+      <div class="hud-label">スコア</div>
+      <div class="hud-value" id="score-value">0</div>
+    </div>
+    <div class="hud-box">
+      <div class="hud-label">のこり</div>
+      <div class="hud-value" id="time-value">60</div>
+    </div>
+  </div>
+  <div class="field" id="field"></div>
+
+  <!-- リザルトオーバーレイ -->
+  <div id="result-overlay" class="hidden">
+    <div class="result-panel">
+      <div class="end-title">ゲームオーバー！</div>
+      <div class="end-score-label">スコア</div>
+      <div class="end-score" id="final-score">0</div>
+      <button class="btn btn-retry" onclick="startGame()">もう一回</button>
+      <button class="btn btn-title" onclick="showStart()">タイトルへ</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const HOLES = 9;
+const GAME_TIME = 60;
+const FEVER_START = 5; // 残り秒数
+
+let score = 0;
+let timeLeft = GAME_TIME;
+let timerInterval = null;
+let spawnTimeout = null;
+let hideTimeouts = [];
+let activeHoles = new Set();
+let holes = [];
+let isFever = false;
+let feverAnnounced = false;
+
+// 経過時間に応じたスポーンパラメータ
+function getParams() {
+  const elapsed = GAME_TIME - timeLeft;
+  if (elapsed < 5)  return { delay: 1100, stay: 1000, count: 1 };
+  if (elapsed < 20) return { delay: 900,  stay: 900,  count: 1 };
+  if (elapsed < 35) return { delay: 700,  stay: 750,  count: 1 };
+  if (elapsed < 50) return { delay: 500,  stay: 650,  count: 1 };
+                    return { delay: 380,  stay: 600,  count: 1 };
+}
+
+function getFeverParams() {
+  return { delay: 320, stay: 550, count: 3 };
+}
+
+let _assetLoaded = 0;
+let _assetFailed = false;
+const MAIN_ASSET_COUNT = 4; // title, chars, message, button
+
+function onAssetLoad() {
+  _assetLoaded++;
+  if (!_assetFailed && _assetLoaded >= MAIN_ASSET_COUNT) hideFallback();
+}
+function onAssetError(el) {
+  el.style.display = 'none';
+  _assetFailed = true;
+}
+function hideFallback() {
+  document.getElementById('start-fallback').classList.add('hidden');
+}
+
+function show(id) {
+  ['start-screen','game-screen'].forEach(s => {
+    document.getElementById(s).classList.add('hidden');
+  });
+  document.getElementById(id).classList.remove('hidden');
+  document.getElementById('result-overlay').classList.add('hidden');
+}
+
+function showStart() { show('start-screen'); }
+
+function startGame() {
+  score = 0;
+  timeLeft = GAME_TIME;
+  isFever = false;
+  feverAnnounced = false;
+  activeHoles = new Set();
+  clearInterval(timerInterval);
+  clearTimeout(spawnTimeout);
+  hideTimeouts.forEach(t => clearTimeout(t));
+  hideTimeouts = [];
+
+  buildField();
+  updateHUD();
+  show('game-screen');
+  document.getElementById('game-screen').classList.remove('fever');
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    updateHUD();
+    if (timeLeft <= FEVER_START && !feverAnnounced) enterFever();
+    if (timeLeft <= 0) endGame();
+  }, 1000);
+
+  scheduleSpawn();
+}
+
+function buildField() {
+  const field = document.getElementById('field');
+  field.innerHTML = '';
+  holes = [];
+  for (let i = 0; i < HOLES; i++) {
+    const div = document.createElement('div');
+    div.className = 'hole';
+    div.addEventListener('click', () => hitHole(i));
+
+    const chara = document.createElement('div');
+    chara.className = 'chara';
+    chara.textContent = '🟡';
+    div.appendChild(chara);
+
+    field.appendChild(div);
+    holes.push({ el: div, chara });
+  }
+}
+
+function enterFever() {
+  isFever = true;
+  feverAnnounced = true;
+  document.getElementById('game-screen').classList.add('fever');
+
+  // 既存スポーンをリセット
+  clearTimeout(spawnTimeout);
+  hideTimeouts.forEach(t => clearTimeout(t));
+  hideTimeouts = [];
+  hideAll();
+
+  // フィーバーバナー表示
+  const banner = document.createElement('div');
+  banner.className = 'fever-banner';
+  banner.textContent = '🔥 フィーバー！';
+  document.getElementById('game-screen').appendChild(banner);
+  banner.addEventListener('animationend', () => banner.remove());
+
+  scheduleSpawn();
+}
+
+function scheduleSpawn() {
+  if (timeLeft <= 0) return;
+  const p = isFever ? getFeverParams() : getParams();
+  const jitter = (Math.random() - 0.5) * 100;
+  spawnTimeout = setTimeout(spawnCharas, p.delay + jitter);
+}
+
+function spawnCharas() {
+  if (timeLeft <= 0) return;
+  const p = isFever ? getFeverParams() : getParams();
+
+  // フィーバー: 空き穴からcount個選ぶ
+  const available = [];
+  for (let i = 0; i < HOLES; i++) {
+    if (!activeHoles.has(i)) available.push(i);
+  }
+  shuffle(available);
+  const targets = available.slice(0, p.count);
+
+  targets.forEach(idx => {
+    activeHoles.add(idx);
+    holes[idx].chara.classList.add('up');
+    const t = setTimeout(() => {
+      hideSingle(idx);
+      // 全員引っ込んだら次スポーン（通常時のみ）
+      if (!isFever && activeHoles.size === 0) scheduleSpawn();
+    }, p.stay);
+    hideTimeouts.push(t);
+  });
+
+  // フィーバー中は連続スポーン
+  if (isFever) scheduleSpawn();
+}
+
+function hideSingle(idx) {
+  if (activeHoles.has(idx)) {
+    holes[idx].chara.classList.remove('up');
+    activeHoles.delete(idx);
+  }
+}
+
+function hideAll() {
+  activeHoles.forEach(idx => holes[idx].chara.classList.remove('up'));
+  activeHoles.clear();
+}
+
+function hitHole(idx) {
+  if (!activeHoles.has(idx)) return;
+  score += 10;
+  updateHUD();
+  hideSingle(idx);
+  showHitEffect(holes[idx].el);
+  // 通常時: 当てたら即次スポーン
+  if (!isFever && activeHoles.size === 0) {
+    clearTimeout(spawnTimeout);
+    scheduleSpawn();
+  }
+}
+
+function showHitEffect(el) {
+  const ef = document.createElement('div');
+  ef.className = 'hit-effect';
+  ef.textContent = '+10';
+  el.appendChild(ef);
+  ef.addEventListener('animationend', () => ef.remove());
+}
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+}
+
+function updateHUD() {
+  document.getElementById('score-value').textContent = score;
+  document.getElementById('time-value').textContent = timeLeft;
+}
+
+function endGame() {
+  clearInterval(timerInterval);
+  clearTimeout(spawnTimeout);
+  hideTimeouts.forEach(t => clearTimeout(t));
+  hideTimeouts = [];
+  hideAll();
+  document.getElementById('final-score').textContent = score;
+  document.getElementById('result-overlay').classList.remove('hidden');
+}
+</script>
+</body>
+</html>
